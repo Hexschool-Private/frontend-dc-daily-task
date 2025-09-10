@@ -1,129 +1,101 @@
 <script setup>
-import { mockApiInstance } from "~/mocks/mock-api";
+import { formatDate } from '@/utils/dateFormatter';
 
 const { $swal } = useNuxtApp();
 
-import { useCheckinTableData } from "@/composables/useCheckinTableData";
-import { formatDate } from "@/utils/dateFormatter";
-
 // 搜尋和每頁筆數變數
-const searchQuery = ref("");
+const searchQuery = ref('');
 const currentPage = ref(1);
 const pageSize = ref(10);
 const debounceTimer = ref(null);
 
-/* ------------------------- 獲取資料 ------------------------- */
-const data = ref(null);
+// 資料狀態
+const rawData = ref(null);
+const isLoading = ref(true);
+
+// 計算屬性 - 處理後的資料
+const processedData = computed(() => {
+  if (!rawData.value) return null;
+
+  const { users = [], stats = [], updated_at } = rawData.value;
+
+  // 從 stats 取得日期列表並排序
+  const dateList = stats.map((stat) => stat.date).sort();
+
+  // 處理使用者資料
+  const processedUsers = users.map((user) => {
+    const days = dateList.map((date) => user.presence?.[date] || false);
+
+    return {
+      ...user,
+      days,
+    };
+  });
+
+  return {
+    users: processedUsers,
+    dateList,
+    updatedAt: updated_at,
+    pagination: rawData.value.pagination,
+  };
+});
+
+// 獲取資料
 const fetchData = async () => {
   try {
+    isLoading.value = true;
     const search = searchQuery.value.trim();
 
-    const url = `/api/dashboard/?page=${currentPage.value}&page_size=${pageSize.value}&search=${search}&sort_by=completed_count&sort_order=desc`;
+    const url = `/dashboard/?page=${currentPage.value}&page_size=${pageSize.value}&search=${search}&sort_by=completed_count&sort_order=desc`;
 
-    const response = await mockApiInstance.handleRequest(url);
-    const res = await response.json();
+    const res = await $fetch(url, {
+      baseURL: process.env.API_BASE_URL,
+    });
 
-    const processed = useCheckinTableData(
-      res.avatar_url,
-      res.users,
-      res.stats,
-      res.pagination,
-      res.updated_at,
-      res.completed_count,
-      "2025-05-01"
-    );
-
-    const storedKeyword = localStorage.getItem("searchKeyword")?.toLowerCase();
-    const alreadyExists = processed.processedUsers.some((user) =>
-      user.global_name?.toLowerCase().includes(storedKeyword)
-    );
-
-    if (storedKeyword && currentPage.value === 1) {
-      const keywordUrl = `/api/dashboard/?page=1&page_size=1&search=${storedKeyword}`;
-      const keywordRes = await mockApiInstance.handleRequest(keywordUrl);
-      const keywordData = await keywordRes.json();
-
-      const userData = useCheckinTableData(
-        keywordData.avatar_url,
-        keywordData.users,
-        keywordData.stats,
-        keywordData.pagination,
-        keywordData.updated_at,
-        keywordData.completed_count,
-        "2025-05-01"
-      );
-
-      if (userData.processedUsers.length > 0) {
-        const searchUser = userData.processedUsers[0];
-        processed.processedUsers = processed.processedUsers.filter(
-          (user) => user.author_id !== searchUser.author_id
-        );
-        processed.processedUsers.unshift(searchUser);
-      }
-    }
-
-    data.value = processed;
+    rawData.value = res;
   } catch (error) {
     $swal.fire({
-      icon: "error",
-      title: error?.data || "發生錯誤，請稍後再試",
+      icon: 'error',
+      title: error?.data || '發生錯誤，請稍後再試',
       showConfirmButton: false,
       timer: 1500,
     });
+  } finally {
+    isLoading.value = false;
   }
 };
 
-
-/* ---- 儲存使用者搜尋過的關鍵字，方便將常用的搜尋結果優先顯示 ---- */
-watch(searchQuery, (newQuery) => {
-  const trimmedQuery = newQuery.trim();
-  const storedKeyword = localStorage.getItem("searchKeyword") || "";
-
-  if (trimmedQuery && trimmedQuery !== storedKeyword) {
-    localStorage.setItem("searchKeyword", trimmedQuery);
-  }
-
-  debouncedSearch();
-});
-
-/* ------------------------- 頁碼處理 ------------------------- */
-// 算出頁碼中間 ... 函式
+// 頁碼處理
 const getVisiblePages = (totalPages) => {
-  const pages = [];
+  if (!totalPages) return [];
 
-  // 顯示的最大頁碼數（不含 ... 和上下箭頭）
+  const pages = [];
   const maxVisiblePages = 3;
 
   if (totalPages <= 5) {
-    // 小於等於 5 頁時全部顯示
     for (let i = 1; i <= totalPages; i++) {
       pages.push(i);
     }
   } else {
-    // 開頭幾頁（1、2、3）
     if (currentPage.value <= 3) {
       for (let i = 1; i <= maxVisiblePages + 1; i++) {
         pages.push(i);
       }
-      pages.push("...");
+      pages.push('...');
       pages.push(totalPages);
-    }
-    // 結尾幾頁
-    else if (currentPage.value >= totalPages - 2) {
+    } else if (currentPage.value >= totalPages - 2) {
       pages.push(1);
-      pages.push("...");
+      pages.push('...');
       for (let i = totalPages - 3; i <= totalPages; i++) {
         pages.push(i);
       }
-    }
-    // 中間滑動區域
-    else {
+    } else {
       pages.push(1);
-      pages.push("...");
+      pages.push('...');
       pages.push(currentPage.value - 1);
       pages.push(currentPage.value);
       pages.push(currentPage.value + 1);
-      pages.push("...");
+      pages.push('...');
       pages.push(totalPages);
     }
   }
@@ -131,13 +103,11 @@ const getVisiblePages = (totalPages) => {
   return pages;
 };
 
-// 切換頁碼
 const changePage = (page) => {
   currentPage.value = page;
 };
 
-/* ----------------- 監聽器與生命週期 ----------------- */
-// 防抖搜尋處理（300ms）
+// 搜尋處理
 const debouncedSearch = () => {
   clearTimeout(debounceTimer.value);
   debounceTimer.value = setTimeout(() => {
@@ -146,13 +116,15 @@ const debouncedSearch = () => {
   }, 300);
 };
 
-onMounted(() => fetchData());
-watch([currentPage, pageSize], () => fetchData());
+// 監聽器
 watch(searchQuery, debouncedSearch);
+watch([currentPage, pageSize], fetchData);
+
+// 生命週期
+onMounted(fetchData);
 </script>
 
 <template>
-  <!-- Begin Page Content -->
   <div class="w-100 px-4 px-md-5 py-4 height-100vh">
     <!-- Page Heading -->
     <h1 class="h3 mb-2 text-gray-800">Tables</h1>
@@ -169,21 +141,19 @@ watch(searchQuery, debouncedSearch);
               <li><p class="m-0">*只要在該日打卡討論串留言就算打卡成功</p></li>
               <li>
                 <p class="m-0">
-                  *資料更新頻率：本次體驗營結束，目前已暫停更新（最後更新時間：
-                  {{ data?.updatedAt }}）
+                  最後更新時間： {{ processedData?.updatedAt || '--' }}
                 </p>
               </li>
             </ol>
           </div>
         </div>
+
         <div class="row f-between-center">
           <div class="col-sm-6 col-xxl-2">
-            <div class="dataTables_length" id="dataTable_length">
+            <div class="dataTables_length">
               <label class="f-center gap-2">
                 Show
                 <select
-                  name="dataTable_length"
-                  aria-controls="dataTable"
                   class="form-control form-control-sm"
                   v-model="pageSize"
                   @change="currentPage = 1"
@@ -198,14 +168,13 @@ watch(searchQuery, debouncedSearch);
             </div>
           </div>
           <div class="col-sm-6 col-xxl-3 mt-2 mt-sm-0">
-            <div id="dataTable_filter" class="dataTables_filter text-end">
+            <div class="dataTables_filter text-end">
               <label class="f-center gap-2">
                 Search:
                 <input
                   type="search"
                   class="form-control form-control-sm"
                   placeholder="請輸入顯示名稱"
-                  aria-controls="dataTable"
                   v-model="searchQuery"
                 />
               </label>
@@ -214,10 +183,20 @@ watch(searchQuery, debouncedSearch);
         </div>
 
         <div class="table-responsive mt-3">
+          <!-- 載入中 -->
+          <div v-if="isLoading" class="py-4">
+            <h2 class="fs-5 fs-lg-2">載入中 ...</h2>
+          </div>
+
+          <!-- 無資料 -->
+          <div v-else-if="!processedData?.users?.length" class="py-4">
+            <h2 class="fs-5 fs-lg-2">無符合搜尋結果的資料</h2>
+          </div>
+
+          <!-- 資料表格 -->
           <table
-            v-if="data?.processedUsers.length > 0"
+            v-else
             class="table table-bordered table-hover"
-            id="dataTable"
             width="100%"
             cellspacing="0"
           >
@@ -226,8 +205,8 @@ watch(searchQuery, debouncedSearch);
                 <th class="sticky-col">使用者</th>
                 <th>累積打卡天數</th>
                 <th
-                  v-for="(date, index) in data?.dateList"
-                  :key="index"
+                  v-for="(date, index) in processedData.dateList"
+                  :key="date"
                   :title="formatDate(date)"
                 >
                   Day {{ index + 1 }}
@@ -235,31 +214,22 @@ watch(searchQuery, debouncedSearch);
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="{
-                  avatar_url,
-                  global_name,
-                  author_id,
-                  username,
-                  completed_count,
-                  days,
-                } in data?.processedUsers"
-                :key="author_id"
-              >
+              <tr v-for="user in processedData.users" :key="user.author_id">
                 <td class="sticky-col">
                   <NuxtImg
-                    :src="avatar_url"
+                    :src="user.avatar_url"
                     alt="avatar-image"
                     width="30"
                     height="30"
                     class="rounded-circle me-2"
-                  />{{ global_name }} ({{ username }})
+                  />
+                  {{ user.global_name }} ({{ user.username }})
                 </td>
                 <td class="text-center">
-                  {{ completed_count }}
+                  {{ user.completed_count }}
                 </td>
                 <td
-                  v-for="(checked, index) in days"
+                  v-for="(checked, index) in user.days"
                   :key="index"
                   class="text-center"
                 >
@@ -271,36 +241,27 @@ watch(searchQuery, debouncedSearch);
               </tr>
             </tbody>
           </table>
-          <div class="py-4" v-else-if="data?.processedUsers.length === 0">
-            <h2 class="fs-5 fs-lg-2">無符合搜尋結果的資料</h2>
-          </div>
-          <div class="py-4" v-else>
-            <h2 class="fs-5 fs-lg-2">載入中 ...</h2>
-          </div>
         </div>
 
-        <div class="row f-between-center mt-2">
+        <!-- 分頁 -->
+        <div v-if="processedData?.pagination" class="row f-between-center mt-2">
           <div class="col-sm-6">
-            <div
-              class="dataTables_info"
-              id="dataTable_info"
-              role="status"
-              aria-live="polite"
-            >
+            <div class="dataTables_info">
+              Showing
               {{
-                data?.pagination
-                  ? `Showing ${
-                      (data.pagination.current_page - 1) *
-                        data.pagination.page_size +
-                      1
-                    } 
-          to ${Math.min(
-            data.pagination.current_page * data.pagination.page_size,
-            data.pagination.total_count
-          )} 
-          of ${data.pagination.total_count} entries`
-                  : "Loading..."
+                (processedData.pagination.current_page - 1) *
+                  processedData.pagination.page_size +
+                1
               }}
+              to
+              {{
+                Math.min(
+                  processedData.pagination.current_page *
+                    processedData.pagination.page_size,
+                  processedData.pagination.total_count
+                )
+              }}
+              of {{ processedData.pagination.total_count }} entries
             </div>
           </div>
           <div class="col-sm-6 mt-2 mt-sm-0">
@@ -312,7 +273,6 @@ watch(searchQuery, debouncedSearch);
                 >
                   <a
                     href="#"
-                    aria-controls="dataTable"
                     class="page-link"
                     @click.prevent="
                       currentPage > 1 && changePage(currentPage - 1)
@@ -328,14 +288,13 @@ watch(searchQuery, debouncedSearch);
                     disabled: page === '...',
                   }"
                   v-for="(page, index) in getVisiblePages(
-                    data?.pagination?.total_pages
+                    processedData.pagination.total_pages
                   )"
                   :key="index"
                 >
                   <a
-                    href="#"
-                    aria-controls="dataTable"
                     v-if="page !== '...'"
+                    href="#"
                     class="page-link"
                     @click.prevent="changePage(page)"
                   >
@@ -345,17 +304,16 @@ watch(searchQuery, debouncedSearch);
                 </li>
                 <li
                   class="paginate_button page-item next"
-                  id="dataTable_next"
                   :class="{
-                    disabled: currentPage === data?.pagination?.total_pages,
+                    disabled:
+                      currentPage === processedData.pagination.total_pages,
                   }"
                 >
                   <a
                     href="#"
-                    aria-controls="dataTable"
                     class="page-link"
                     @click.prevent="
-                      currentPage < data?.pagination?.total_pages &&
+                      currentPage < processedData.pagination.total_pages &&
                         changePage(currentPage + 1)
                     "
                   >

@@ -1,17 +1,17 @@
 <script setup>
-import { useRouter } from "vue-router";
+import { useRouter } from 'vue-router';
 
 const router = useRouter();
 
 router.afterEach(() => {
   const body = document.body;
-  const sidebar = document.querySelector(".sidebar");
+  const sidebar = document.querySelector('.sidebar');
 
   if (window.innerWidth < 768) {
-    body.classList.add("sidebar-toggled");
-    sidebar?.classList.add("toggled");
+    body.classList.add('sidebar-toggled');
+    sidebar?.classList.add('toggled');
 
-    const collapses = sidebar?.querySelectorAll(".collapse") || [];
+    const collapses = sidebar?.querySelectorAll('.collapse') || [];
     collapses.forEach((el) => {
       const bsCollapse = bootstrap.Collapse.getInstance(el);
       bsCollapse?.hide();
@@ -21,20 +21,20 @@ router.afterEach(() => {
 
 const resizeHandler = () => {
   const body = document.body;
-  const sidebar = document.querySelector(".sidebar");
+  const sidebar = document.querySelector('.sidebar');
 
   if (window.innerWidth < 768) {
-    const collapses = sidebar?.querySelectorAll(".collapse") || [];
+    const collapses = sidebar?.querySelectorAll('.collapse') || [];
     collapses.forEach((el) => {
       const bsCollapse = bootstrap.Collapse.getInstance(el);
       bsCollapse?.hide();
     });
   }
 
-  if (window.innerWidth < 480 && !sidebar?.classList.contains("toggled")) {
-    body.classList.add("sidebar-toggled");
-    sidebar?.classList.add("toggled");
-    const collapses = sidebar?.querySelectorAll(".collapse") || [];
+  if (window.innerWidth < 480 && !sidebar?.classList.contains('toggled')) {
+    body.classList.add('sidebar-toggled');
+    sidebar?.classList.add('toggled');
+    const collapses = sidebar?.querySelectorAll('.collapse') || [];
     collapses.forEach((el) => {
       const bsCollapse = bootstrap.Collapse.getInstance(el);
       bsCollapse?.hide();
@@ -44,26 +44,26 @@ const resizeHandler = () => {
 
 // 右下往上滑小按鈕邏輯
 const scrollHandler = () => {
-  const scrollTopBtn = document.querySelector(".scroll-to-top");
+  const scrollTopBtn = document.querySelector('.scroll-to-top');
   if (scrollTopBtn) {
-    scrollTopBtn.style.display = window.scrollY > 100 ? "block" : "none";
+    scrollTopBtn.style.display = window.scrollY > 100 ? 'block' : 'none';
   }
 };
 
 onMounted(() => {
   const body = document.body;
-  const sidebar = document.querySelector(".sidebar");
-  const sidebarToggle = document.getElementById("sidebarToggle");
-  const sidebarToggleTop = document.getElementById("sidebarToggleTop");
-  const scrollTopBtn = document.querySelector(".scroll-to-top");
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarToggleTop = document.getElementById('sidebarToggleTop');
+  const scrollTopBtn = document.querySelector('.scroll-to-top');
 
   const toggleSidebar = () => {
-    body.classList.toggle("sidebar-toggled");
-    sidebar?.classList.toggle("toggled");
-    if (sidebar?.classList.contains("toggled")) {
-      const collapses = sidebar.querySelectorAll(".collapse");
+    body.classList.toggle('sidebar-toggled');
+    sidebar?.classList.toggle('toggled');
+    if (sidebar?.classList.contains('toggled')) {
+      const collapses = sidebar.querySelectorAll('.collapse');
       collapses.forEach((el) => {
-        if (el.classList.contains("show")) {
+        if (el.classList.contains('show')) {
           const bsCollapse = bootstrap.Collapse.getInstance(el);
           bsCollapse?.hide();
         }
@@ -71,29 +71,29 @@ onMounted(() => {
     }
   };
 
-  sidebarToggle?.addEventListener("click", toggleSidebar);
-  sidebarToggleTop?.addEventListener("click", toggleSidebar);
+  sidebarToggle?.addEventListener('click', toggleSidebar);
+  sidebarToggleTop?.addEventListener('click', toggleSidebar);
 
   // 添加事件監聽
-  window.addEventListener("resize", resizeHandler);
-  document.addEventListener("scroll", scrollHandler);
+  window.addEventListener('resize', resizeHandler);
+  document.addEventListener('scroll', scrollHandler);
 
   // 重要：頁面載入時立即執行一次大小檢查
   resizeHandler();
 
   // 平滑捲動
-  scrollTopBtn?.addEventListener("click", (e) => {
+  scrollTopBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     window.scrollTo({
       top: 0,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
   });
 });
 
 onUnmounted(() => {
-  window.removeEventListener("resize", resizeHandler);
-  document.removeEventListener("scroll", scrollHandler);
+  window.removeEventListener('resize', resizeHandler);
+  document.removeEventListener('scroll', scrollHandler);
 });
 </script>
 
@@ -144,10 +144,10 @@ onUnmounted(() => {
     </li>
 
     <!-- Heading -->
-    <div class="sidebar-heading mt-4">LINK</div>
+    <!-- <div class="sidebar-heading mt-4">LINK</div> -->
 
     <!-- Nav Item - Tasks -->
-    <li class="nav-item mt-2">
+    <!-- <li class="nav-item mt-2">
       <a
         class="nav-link py-2"
         href="https://liberating-turtle-5a2.notion.site/1e76a2468518808aabb1ff740fb936b2?pvs=4"
@@ -157,7 +157,7 @@ onUnmounted(() => {
         <i class="fas fa-fw fa-thumbs-up"></i>
         <span> 體驗營證書攻略包</span>
       </a>
-    </li>
+    </li> -->
 
     <!-- Divider -->
     <hr class="sidebar-divider d-none d-md-block" />

@@ -7,6 +7,9 @@ const props = defineProps({
   checkInNum: {
     required: true,
   },
+  studentCheckInNum: {
+    required: true,
+  },
 });
 
 // 任務進度條計算
@@ -46,33 +49,19 @@ const taskProgress = computed(() => {
               <div
                 class="text-xs font-weight-bold text-info text-uppercase mb-1"
               >
-                任務發布進度
+                參與打卡人數
               </div>
               <div class="row no-gutters align-items-center">
                 <div class="col-auto">
                   <div class="fs-3 mb-0 fw-bold">
-                    {{ taskProgress }}
-                    %
-                  </div>
-                </div>
-                <div class="col">
-                  <div class="progress progress-sm mr-2">
-                    <div
-                      class="progress-bar bg-info"
-                      role="progressbar"
-                      :style="{
-                        width: `${taskProgress}%`,
-                      }"
-                      aria-valuenow="50"
-                      aria-valuemin="0"
-                      aria-valuemax="100"
-                    ></div>
+                    {{ studentCheckInNum }}
+                    人
                   </div>
                 </div>
               </div>
             </div>
             <div class="col-auto">
-              <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+              <i class="fas fa-user-check fa-2x text-gray-300"></i>
             </div>
           </div>
         </div>
@@ -88,7 +77,7 @@ const taskProgress = computed(() => {
                 每日任務已經累積
               </div>
               <div class="fs-3 mb-0 fw-bold">
-                {{ props?.stats?.css.length }}
+                {{ props?.stats?.length }}
                 <span class="fs-6 fw-light">天</span>
               </div>
             </div>
@@ -110,7 +99,7 @@ const taskProgress = computed(() => {
               </div>
               <div class="fs-5 mb-0">
                 <a
-                  href="https://discord.com/channels/801807326054055996/1349590197708525638"
+                  href="https://discord.com/channels/801807326054055996/1399326317136314482"
                   target="_blank"
                   rel="noopener noreferrer"
                   >點此前往 Discord
