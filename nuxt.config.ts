@@ -3,6 +3,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
   devtools: { enabled: true },
   modules: ['@nuxt/image-edge'],
+  runtimeConfig: {
+    public: {
+      gaMeasurementId: process.env.NUXT_PUBLIC_GA_MEASUREMENT_ID || '',
+    },
+  },
   app: {
     baseURL: process.env.NODE_ENV === 'production' ? '/hex2025-EduTrack/' : '/',
     buildAssetsDir: '/static/',
@@ -58,5 +63,9 @@ export default defineNuxtConfig({
       },
     },
   },
-  plugins: ['~/plugins/chart.js', '~/plugins/bootstrap.client.js'],
+  plugins: [
+    '~/plugins/chart.js',
+    '~/plugins/bootstrap.client.js',
+    '~/plugins/gtag.client.js',
+  ],
 });
