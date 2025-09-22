@@ -51,7 +51,8 @@ const fetchData = async () => {
         ?.filter((item) => new Date(item.date) >= new Date('2025-05-01'))
         ?.reduce((sum, item) => sum + item.count, 0) || 0;
     // 處理 studentCheckInNum 的統計
-    studentCheckInNum.value = dashboardData?.users?.length || 0;
+
+    studentCheckInNum.value = dashboardData?.pagination?.total_count || 0;
   } catch (error) {
     handleFetchError(error.response || {});
   }
