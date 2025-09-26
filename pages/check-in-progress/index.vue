@@ -138,7 +138,12 @@ onMounted(fetchData);
         <div class="row">
           <div class="col">
             <ol class="p-0">
-              <li><p class="m-0">*只要在該日打卡討論串留言就算打卡成功</p></li>
+              <li>
+                <p class="m-0">
+                  *只要在該日打卡討論串留言就算打卡成功，該日的每日任務提交的截止時間是在隔天中午
+                  12:00，超過時間的留言將不計入打卡成功。
+                </p>
+              </li>
               <li>
                 <p class="m-0">
                   最後更新時間： {{ processedData?.updatedAt || '--' }}
